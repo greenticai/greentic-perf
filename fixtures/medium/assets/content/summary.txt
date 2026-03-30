@@ -1,0 +1,1 @@
+The medium fixture adds multiple deterministic inputs so later benchmarks can exercise more file handling than the smoke tier.

@@ -1,0 +1,7 @@
+{
+  "name": "heavy-workspace",
+  "kind": "heavy",
+  "description": "Deterministic high-fan-out fixture for thread scaling and nightly runs",
+  "packs": ["heavy-pack"],
+  "bundles": ["heavy-bundle"]
+}

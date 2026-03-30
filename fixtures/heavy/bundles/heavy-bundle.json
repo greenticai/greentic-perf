@@ -1,0 +1,13 @@
+{
+  "name": "heavy-bundle",
+  "pack": "heavy-pack",
+  "targets": ["preview", "export", "archive"],
+  "inputs": [
+    "assets/regions/eu.json",
+    "assets/regions/us.json",
+    "assets/regions/apac.json",
+    "assets/content/chapter-1.txt",
+    "assets/content/chapter-2.txt",
+    "assets/content/chapter-3.txt"
+  ]
+}

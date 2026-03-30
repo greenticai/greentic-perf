@@ -1,0 +1,6 @@
+{
+  "name": "smoke-bundle",
+  "pack": "core",
+  "targets": ["preview"],
+  "inputs": ["assets/messages/en.txt"]
+}

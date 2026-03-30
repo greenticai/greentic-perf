@@ -1,0 +1,5 @@
+{
+  "region": "us",
+  "sites": ["iad-01", "ord-02", "sea-03"],
+  "baseline_latency_ms": 18
+}

@@ -1,0 +1,14 @@
+{
+  "id": "catalog",
+  "version": "0.2.0",
+  "components": [
+    {
+      "name": "product-list",
+      "entry": "assets/catalog/products.json"
+    },
+    {
+      "name": "summary",
+      "entry": "assets/content/summary.txt"
+    }
+  ]
+}

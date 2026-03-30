@@ -1,0 +1,17 @@
+{
+  "fixture_kind": "pack",
+  "tier": "heavy",
+  "name": "perf-heavy-pack",
+  "description": "Stress pack fixture for nightly scaling and hang detection",
+  "generator": {
+    "kind": "template-copy",
+    "template": "pack"
+  },
+  "values": {
+    "pack_id": "perf.heavy.pack",
+    "pack_name": "perf-heavy-pack",
+    "flow_count": 16,
+    "component_count": 10,
+    "asset_count": 64
+  }
+}

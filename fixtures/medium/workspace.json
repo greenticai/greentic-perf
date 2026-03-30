@@ -1,0 +1,7 @@
+{
+  "name": "medium-workspace",
+  "kind": "medium",
+  "description": "Multi-asset fixture for richer deterministic CLI perf runs",
+  "packs": ["catalog"],
+  "bundles": ["catalog-bundle"]
+}

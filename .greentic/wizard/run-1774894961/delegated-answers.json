@@ -1,0 +1,53 @@
+{
+  "answers": {
+    "access_rules": [
+      {
+        "policy": "public",
+        "rule_path": "perf-smoke-pack",
+        "tenant": "default"
+      }
+    ],
+    "advanced_setup": false,
+    "app_pack_entries": [
+      {
+        "detected_kind": "local_file",
+        "display_name": "Perf Smoke Pack",
+        "mapping": {
+          "scope": "global"
+        },
+        "pack_id": "perf-smoke-pack",
+        "reference": "./packs/perf-smoke-pack"
+      }
+    ],
+    "app_packs": [
+      "./packs/perf-smoke-pack"
+    ],
+    "bundle_id": "perf-smoke-bundle",
+    "bundle_name": "perf-smoke-bundle",
+    "capabilities": [
+      "greentic.cap.bundle_assets.read.v1"
+    ],
+    "export_intent": false,
+    "extension_provider_entries": [],
+    "extension_providers": [],
+    "mode": "create",
+    "output_dir": "./perf-smoke-bundle-bundle",
+    "remote_catalogs": [],
+    "setup_answers": {},
+    "setup_execution_intent": false,
+    "setup_specs": {}
+  },
+  "locale": "en",
+  "locks": {
+    "cache_policy": "workspace-local",
+    "catalogs": [],
+    "execution": "dry_run",
+    "lock_file": "bundle.lock.json",
+    "requested_mode": "create",
+    "setup_state_files": [],
+    "workspace_root": "bundle.yaml"
+  },
+  "schema_id": "greentic-bundle.wizard.answers",
+  "schema_version": "1.0.0",
+  "wizard_id": "greentic-bundle.wizard.run"
+}

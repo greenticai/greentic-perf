@@ -1,0 +1,1 @@
+Chapter 1: deterministic heavy fixture content for filesystem traversal and bundle fan-out validation.

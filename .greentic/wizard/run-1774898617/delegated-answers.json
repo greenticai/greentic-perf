@@ -1,0 +1,43 @@
+{
+  "answers": {
+    "access_rules": [],
+    "advanced_setup": false,
+    "app_pack_entries": [],
+    "app_packs": [],
+    "bundle_id": "qa-template-worker",
+    "bundle_name": "QA Template Worker",
+    "capabilities": [],
+    "export_intent": false,
+    "extension_provider_entries": [
+      {
+        "detected_kind": "oci",
+        "display_name": "WebChat",
+        "provider_id": "messaging-webchat",
+        "reference": "oci://ghcr.io/greenticai/packs/messaging/messaging-webchat:latest",
+        "version": "latest"
+      }
+    ],
+    "extension_providers": [
+      "oci://ghcr.io/greenticai/packs/messaging/messaging-webchat:latest"
+    ],
+    "mode": "create",
+    "output_dir": "/projects/ai/greentic-ng/greentic-perf/fixtures-gen/runtime/.staging/qa-template-worker",
+    "remote_catalogs": [],
+    "setup_answers": {},
+    "setup_execution_intent": false,
+    "setup_specs": {}
+  },
+  "locale": "en",
+  "locks": {
+    "cache_policy": "workspace-local",
+    "catalogs": [],
+    "execution": "execute",
+    "lock_file": "bundle.lock.json",
+    "requested_mode": "create",
+    "setup_state_files": [],
+    "workspace_root": "bundle.yaml"
+  },
+  "schema_id": "greentic-bundle.wizard.answers",
+  "schema_version": "1.0.0",
+  "wizard_id": "greentic-bundle.wizard.run"
+}

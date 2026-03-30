@@ -1,0 +1,98 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag in the form vX.Y.Z"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.version.outputs.release_tag }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Resolve release version
+        id: version
+        shell: bash
+        env:
+          RELEASE_TAG_INPUT: ${{ github.event.inputs.release_tag || '' }}
+        run: |
+          set -euo pipefail
+          version="$(cargo metadata --no-deps --format-version 1 | perl -MJSON::PP -e 'local $/; my $data = decode_json(<STDIN>); print $data->{packages}[0]{version};')"
+          tag="${GITHUB_REF_NAME:-}"
+          if [ -n "${RELEASE_TAG_INPUT}" ]; then
+            tag="${RELEASE_TAG_INPUT}"
+          fi
+          expected_tag="v${version}"
+          if [ "$tag" != "$expected_tag" ]; then
+            printf 'Tag/version mismatch: expected %s but got %s\n' "$expected_tag" "$tag" >&2
+            exit 1
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'release_tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+      - name: Verify repository checks
+        run: bash ci/local_check.sh
+
+  publish-crates:
+    runs-on: ubuntu-latest
+    needs: verify
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Publish crates
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS="$(printf '\t')" read -r crate_name manifest_path; do
+            [ -n "$crate_name" ] || continue
+            cargo publish --manifest-path "$manifest_path" -p "$crate_name" --dry-run
+            attempts=0
+            until cargo publish --manifest-path "$manifest_path" -p "$crate_name"; do
+              attempts=$((attempts + 1))
+              if [ "$attempts" -ge 3 ]; then
+                printf 'cargo publish failed for %s after %s attempts\n' "$crate_name" "$attempts" >&2
+                exit 1
+              fi
+              sleep $((attempts * 10))
+            done
+          done < <(cargo metadata --no-deps --format-version 1 | perl -MJSON::PP -e '
+            local $/;
+            my $data = decode_json(<STDIN>);
+            for my $pkg (@{$data->{packages}}) {
+              next if defined($pkg->{publish}) && ref($pkg->{publish}) eq q(JSON::PP::Boolean) && !$pkg->{publish};
+              next if defined($pkg->{publish}) && ref($pkg->{publish}) eq q(ARRAY) && !@{$pkg->{publish}};
+              print $pkg->{name}, "\t", $pkg->{manifest_path}, "\n";
+            }
+          ')
+
+  github-release:
+    runs-on: ubuntu-latest
+    needs:
+      - verify
+      - publish-crates
+    steps:
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.verify.outputs.release_tag }}
+          name: ${{ needs.verify.outputs.release_tag }}
+          generate_release_notes: true

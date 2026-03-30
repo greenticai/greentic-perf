@@ -1,0 +1,166 @@
+name: Perf Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: perf-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  nightly-scenarios:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario_name: smoke-pack-build-t1
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 1
+            command: pack build --in .
+          - scenario_name: smoke-pack-build-t2
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 2
+            command: pack build --in .
+          - scenario_name: smoke-pack-build-t4
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 4
+            command: pack build --in .
+          - scenario_name: smoke-pack-build-t8
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 8
+            command: pack build --in .
+          - scenario_name: smoke-pack-build-t16
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 16
+            command: pack build --in .
+          - scenario_name: medium-bundle-build-t1
+            binary: greentic-bundle
+            fixture: fixtures-gen/medium/bundles/perf-medium-bundle
+            threads: 1
+            command: build
+          - scenario_name: medium-bundle-build-t2
+            binary: greentic-bundle
+            fixture: fixtures-gen/medium/bundles/perf-medium-bundle
+            threads: 2
+            command: build
+          - scenario_name: medium-bundle-build-t4
+            binary: greentic-bundle
+            fixture: fixtures-gen/medium/bundles/perf-medium-bundle
+            threads: 4
+            command: build
+          - scenario_name: medium-bundle-build-t8
+            binary: greentic-bundle
+            fixture: fixtures-gen/medium/bundles/perf-medium-bundle
+            threads: 8
+            command: build
+          - scenario_name: medium-bundle-build-t16
+            binary: greentic-bundle
+            fixture: fixtures-gen/medium/bundles/perf-medium-bundle
+            threads: 16
+            command: build
+          - scenario_name: heavy-bundle-build-t1
+            binary: greentic-bundle
+            fixture: fixtures-gen/heavy/bundles/perf-heavy-bundle
+            threads: 1
+            command: build
+          - scenario_name: heavy-bundle-build-t2
+            binary: greentic-bundle
+            fixture: fixtures-gen/heavy/bundles/perf-heavy-bundle
+            threads: 2
+            command: build
+          - scenario_name: heavy-bundle-build-t4
+            binary: greentic-bundle
+            fixture: fixtures-gen/heavy/bundles/perf-heavy-bundle
+            threads: 4
+            command: build
+          - scenario_name: heavy-bundle-build-t8
+            binary: greentic-bundle
+            fixture: fixtures-gen/heavy/bundles/perf-heavy-bundle
+            threads: 8
+            command: build
+          - scenario_name: heavy-bundle-build-t16
+            binary: greentic-bundle
+            fixture: fixtures-gen/heavy/bundles/perf-heavy-bundle
+            threads: 16
+            command: build
+          - scenario_name: smoke-bundle-artifact-inspect-t1
+            binary: greentic-bundle
+            fixture: fixtures-gen/smoke
+            threads: 1
+            command: inspect --artifact artifacts/perf-smoke-bundle.gtbundle --json --offline
+          - scenario_name: smoke-bundle-artifact-inspect-t4
+            binary: greentic-bundle
+            fixture: fixtures-gen/smoke
+            threads: 4
+            command: inspect --artifact artifacts/perf-smoke-bundle.gtbundle --json --offline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Install latest released gtc
+        run: ./scripts/bootstrap_gtc.sh
+      - name: Generate runtime fixture
+        run: ./scripts/generate_runtime_fixtures.sh
+      - name: Generate nightly scenario JSON
+        shell: bash
+        env:
+          GREENTIC_PERF_BIN: ${{ matrix.binary }}
+        run: |
+          set -euo pipefail
+          ./scripts/generate_fixtures.sh smoke medium heavy
+          mkdir -p artifacts/perf-nightly/results artifacts/perf-nightly/logs
+          read -r -a command_args <<< "${{ matrix.command }}"
+          cargo run -p greentic-perf-harness --example scenario_json -- \
+            "${{ matrix.scenario_name }}" \
+            "${{ matrix.fixture }}" \
+            "${{ matrix.threads }}" \
+            "5000" \
+            "${command_args[@]}" \
+            > "artifacts/perf-nightly/results/${{ matrix.scenario_name }}.json" \
+            2> "artifacts/perf-nightly/logs/${{ matrix.scenario_name }}.log"
+      - name: Upload nightly scenario artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-scenario-${{ matrix.scenario_name }}
+          path: |
+            artifacts/perf-nightly/results/${{ matrix.scenario_name }}.json
+            artifacts/perf-nightly/logs/${{ matrix.scenario_name }}.log
+
+  nightly-bench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Install latest released gtc
+        run: ./scripts/bootstrap_gtc.sh
+      - name: Run nightly benchmark matrix
+        env:
+          GREENTIC_BENCH_PROFILE: nightly
+        run: cargo bench -p greentic-perf-harness --bench cli_bench -- --save-baseline nightly --noplot
+      - name: Build markdown summary
+        run: |
+          mkdir -p artifacts/perf-nightly
+          cargo run -p greentic-perf-harness --example criterion_summary -- target/criterion artifacts/perf-nightly/summary.md
+          cat artifacts/perf-nightly/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload nightly benchmark artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-criterion-artifacts
+          path: |
+            target/criterion
+            artifacts/perf-nightly/summary.md

@@ -1,0 +1,9 @@
+{
+  "name": "catalog-bundle",
+  "pack": "catalog",
+  "targets": ["preview", "export"],
+  "inputs": [
+    "assets/catalog/products.json",
+    "assets/content/summary.txt"
+  ]
+}

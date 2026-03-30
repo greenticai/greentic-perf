@@ -1,0 +1,19 @@
+schema_version: 1
+bundle_id: perf-smoke-bundle
+bundle_name: perf-smoke-bundle
+locale: en
+mode: create
+advanced_setup: false
+app_packs:
+  - ./packs/perf-smoke-pack
+app_pack_mappings:
+  - reference: ./packs/perf-smoke-pack
+    scope: global
+extension_providers: []
+remote_catalogs: []
+hooks: []
+subscriptions: []
+capabilities:
+  - greentic.cap.bundle_assets.read.v1
+setup_execution_intent: false
+export_intent: false

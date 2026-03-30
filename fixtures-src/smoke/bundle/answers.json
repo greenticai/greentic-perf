@@ -1,0 +1,19 @@
+{
+  "fixture_kind": "bundle",
+  "tier": "smoke",
+  "name": "perf-smoke-bundle",
+  "description": "Smallest generated real bundle fixture for PR smoke perf tests",
+  "generator": {
+    "kind": "template-copy",
+    "template": "bundle"
+  },
+  "values": {
+    "bundle_id": "perf.smoke.bundle",
+    "bundle_name": "perf-smoke-bundle",
+    "pack_refs": [
+      {
+        "local_path": "../packs/perf-smoke-pack/pack"
+      }
+    ]
+  }
+}

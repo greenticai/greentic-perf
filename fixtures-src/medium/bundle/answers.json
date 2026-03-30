@@ -1,0 +1,22 @@
+{
+  "fixture_kind": "bundle",
+  "tier": "medium",
+  "name": "perf-medium-bundle",
+  "description": "Multi-pack generated real bundle fixture for medium perf coverage",
+  "generator": {
+    "kind": "template-copy",
+    "template": "bundle"
+  },
+  "values": {
+    "bundle_id": "perf.medium.bundle",
+    "bundle_name": "perf-medium-bundle",
+    "pack_refs": [
+      {
+        "local_path": "../packs/perf-medium-pack/pack"
+      },
+      {
+        "local_path": "../packs/perf-smoke-pack/pack"
+      }
+    ]
+  }
+}

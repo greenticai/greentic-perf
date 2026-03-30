@@ -1,0 +1,34 @@
+scenarios:
+  - name: pack_build_smoke
+    binary: greentic-dev
+    args: ["pack", "build", "--in", "."]
+    fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+    budgets:
+      "1": { max_ms: 2000 }
+      "4": { max_ms: 2000 }
+      "8": { max_ms: 2000 }
+    scaling:
+      max_regression_vs_t1_pct: 150
+      max_regression_vs_prev_pct: 150
+
+  - name: bundle_build_smoke
+    binary: greentic-bundle
+    args: ["build"]
+    fixture: fixtures-gen/smoke/bundles/perf-smoke-bundle
+    budgets:
+      "1": { max_ms: 2000 }
+      "8": { max_ms: 2000 }
+    scaling:
+      max_regression_vs_t1_pct: 150
+      max_regression_vs_prev_pct: 150
+
+  - name: bundle_inspect_artifact_smoke
+    binary: greentic-bundle
+    args: ["inspect", "--artifact", "artifacts/perf-smoke-bundle.gtbundle", "--json", "--offline"]
+    fixture: fixtures-gen/smoke
+    budgets:
+      "1": { max_ms: 2000 }
+      "8": { max_ms: 2000 }
+    scaling:
+      max_regression_vs_t1_pct: 150
+      max_regression_vs_prev_pct: 150

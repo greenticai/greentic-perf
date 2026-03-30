@@ -1,0 +1,17 @@
+{
+  "fixture_kind": "pack",
+  "tier": "smoke",
+  "name": "perf-smoke-pack",
+  "description": "Smallest generated real pack fixture for PR smoke perf tests",
+  "generator": {
+    "kind": "template-copy",
+    "template": "pack"
+  },
+  "values": {
+    "pack_id": "perf.smoke.pack",
+    "pack_name": "perf-smoke-pack",
+    "flow_count": 1,
+    "component_count": 1,
+    "asset_count": 1
+  }
+}

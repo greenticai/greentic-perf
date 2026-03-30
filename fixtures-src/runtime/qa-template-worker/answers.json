@@ -1,0 +1,21 @@
+{
+  "fixture_kind": "runtime_bundle",
+  "tier": "runtime",
+  "name": "qa-template-worker",
+  "description": "Runtime perf probe bundle started with gtc start and intended for webchat direct line exercises.",
+  "generator": {
+    "kind": "setup-bundle-init"
+  },
+  "values": {
+    "bundle_id": "qa-template-worker",
+    "bundle_name": "QA Template Worker",
+    "tenant": "demo",
+    "team": "default",
+    "public_base_url": "http://127.0.0.1:8080",
+    "jwt_signing_key": "qa-template-worker-dev-key"
+  },
+  "expected": {
+    "bundle_dir": "fixtures-gen/runtime/bundles/qa-template-worker",
+    "artifact": "fixtures-gen/runtime/artifacts/qa-template-worker.gtbundle"
+  }
+}

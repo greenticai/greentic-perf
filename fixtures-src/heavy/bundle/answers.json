@@ -1,0 +1,25 @@
+{
+  "fixture_kind": "bundle",
+  "tier": "heavy",
+  "name": "perf-heavy-bundle",
+  "description": "Stress bundle fixture for nightly perf and bad-scaling detection",
+  "generator": {
+    "kind": "template-copy",
+    "template": "bundle"
+  },
+  "values": {
+    "bundle_id": "perf.heavy.bundle",
+    "bundle_name": "perf-heavy-bundle",
+    "pack_refs": [
+      {
+        "local_path": "../packs/perf-heavy-pack/pack"
+      },
+      {
+        "local_path": "../packs/perf-medium-pack/pack"
+      },
+      {
+        "local_path": "../packs/perf-smoke-pack/pack"
+      }
+    ]
+  }
+}

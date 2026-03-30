@@ -1,0 +1,5 @@
+{
+  "region": "eu",
+  "sites": ["ams-01", "fra-02", "mad-03"],
+  "baseline_latency_ms": 14
+}

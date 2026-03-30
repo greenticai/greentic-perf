@@ -1,0 +1,12 @@
+{
+  "id": "heavy-pack",
+  "version": "0.3.0",
+  "components": [
+    { "name": "region-eu", "entry": "assets/regions/eu.json" },
+    { "name": "region-us", "entry": "assets/regions/us.json" },
+    { "name": "region-apac", "entry": "assets/regions/apac.json" },
+    { "name": "chapter-1", "entry": "assets/content/chapter-1.txt" },
+    { "name": "chapter-2", "entry": "assets/content/chapter-2.txt" },
+    { "name": "chapter-3", "entry": "assets/content/chapter-3.txt" }
+  ]
+}

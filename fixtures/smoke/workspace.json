@@ -1,0 +1,7 @@
+{
+  "name": "smoke-workspace",
+  "kind": "smoke",
+  "description": "Minimal deterministic fixture for CLI smoke checks",
+  "packs": ["core"],
+  "bundles": ["smoke-bundle"]
+}

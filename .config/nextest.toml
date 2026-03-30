@@ -1,0 +1,12 @@
+[profile.default]
+failure-output = "immediate-final"
+fail-fast = false
+slow-timeout = { period = "10s", terminate-after = 2 }
+leak-timeout = "5s"
+
+[profile.default.junit]
+path = "target/nextest/default/junit.xml"
+
+[[profile.default.overrides]]
+filter = 'test(/smoke_/)' 
+slow-timeout = { period = "5s", terminate-after = 2 }

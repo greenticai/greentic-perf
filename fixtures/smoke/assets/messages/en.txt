@@ -1,0 +1,1 @@
+Smoke fixture payload for deterministic local perf validation.

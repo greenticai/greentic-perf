@@ -1,0 +1,118 @@
+name: Perf PR
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: perf-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke-nextest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Install latest released gtc
+        run: ./scripts/bootstrap_gtc.sh
+      - name: Generate deterministic fixture outputs
+        run: ./scripts/generate_fixtures.sh smoke
+      - name: Generate runtime smoke fixture
+        run: ./scripts/generate_runtime_fixtures.sh
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@cargo-nextest
+      - name: Run smoke nextest suite
+        env:
+          NEXTEST_PROFILE: default
+        run: cargo nextest run --workspace --profile default --test smoke_cli --test smoke_threads --test runtime_startup
+      - name: Upload nextest artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-nextest-artifacts
+          path: |
+            target/nextest/default/junit.xml
+
+  smoke-results:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scenario_name: smoke-help
+            binary: gtc
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 1
+            command: --help
+          - scenario_name: smoke-pack-build-t1
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 1
+            command: pack build --in .
+          - scenario_name: smoke-pack-build-t4
+            binary: greentic-dev
+            fixture: fixtures-gen/smoke/packs/perf-smoke-pack
+            threads: 4
+            command: pack build --in .
+          - scenario_name: smoke-bundle-artifact-inspect
+            binary: greentic-bundle
+            fixture: fixtures-gen/smoke
+            threads: 1
+            command: inspect --artifact artifacts/perf-smoke-bundle.gtbundle --json --offline
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Install latest released gtc
+        run: ./scripts/bootstrap_gtc.sh
+      - name: Generate scenario JSON
+        shell: bash
+        env:
+          GREENTIC_PERF_BIN: ${{ matrix.binary }}
+        run: |
+          set -euo pipefail
+          ./scripts/generate_fixtures.sh smoke
+          mkdir -p artifacts/perf-pr/results artifacts/perf-pr/logs
+          read -r -a command_args <<< "${{ matrix.command }}"
+          cargo run -p greentic-perf-harness --example scenario_json -- \
+            "${{ matrix.scenario_name }}" \
+            "${{ matrix.fixture }}" \
+            "${{ matrix.threads }}" \
+            "2000" \
+            "${command_args[@]}" \
+            > "artifacts/perf-pr/results/${{ matrix.scenario_name }}.json" \
+            2> "artifacts/perf-pr/logs/${{ matrix.scenario_name }}.log"
+      - name: Upload scenario result artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scenario-results-${{ matrix.scenario_name }}
+          path: |
+            artifacts/perf-pr/results/${{ matrix.scenario_name }}.json
+            artifacts/perf-pr/logs/${{ matrix.scenario_name }}.log
+
+  bench-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.94.0
+      - uses: Swatinem/rust-cache@v2
+      - name: Install latest released gtc
+        run: ./scripts/bootstrap_gtc.sh
+      - name: Run small perf matrix
+        run: cargo bench -p greentic-perf-harness --bench cli_bench -- --noplot
+      - name: Upload benchmark artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: criterion-smoke-benchmarks
+          path: |
+            target/criterion

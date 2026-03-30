@@ -1,0 +1,7 @@
+{
+  "products": [
+    { "id": "sku-001", "name": "Starter Sensor", "region": "eu" },
+    { "id": "sku-002", "name": "Bridge Gateway", "region": "us" },
+    { "id": "sku-003", "name": "Control Hub", "region": "apac" }
+  ]
+}

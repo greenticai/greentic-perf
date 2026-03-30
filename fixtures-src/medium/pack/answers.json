@@ -1,0 +1,17 @@
+{
+  "fixture_kind": "pack",
+  "tier": "medium",
+  "name": "perf-medium-pack",
+  "description": "Realistic medium pack fixture for regular e2e perf tests",
+  "generator": {
+    "kind": "template-copy",
+    "template": "pack"
+  },
+  "values": {
+    "pack_id": "perf.medium.pack",
+    "pack_name": "perf-medium-pack",
+    "flow_count": 4,
+    "component_count": 3,
+    "asset_count": 8
+  }
+}
