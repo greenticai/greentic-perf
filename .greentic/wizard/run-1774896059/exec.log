@@ -1,2 +1,0 @@
-RUN greentic-pack wizard apply --answers .greentic/wizard/run-1774896059/delegated-answers.json
-RUN greentic-bundle wizard apply --answers .greentic/wizard/run-1774896059/delegated-answers.json

@@ -2,9 +2,17 @@
 members = ["perf"]
 resolver = "2"
 
+[workspace.dependencies]
+criterion = "0.8"
+reqwest = { version = "0.13", features = ["blocking", "json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml_bw = "2.5"
+tempfile = "3.23"
+
 [package]
 name = "greentic-perf"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2024"
 license = "MIT"
 rust-version = "1.94"
@@ -24,5 +32,3 @@ include = [
     ".github/workflows/**",
     ".codex/**",
 ]
-
-[dependencies]
