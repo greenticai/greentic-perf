@@ -80,6 +80,7 @@ The current non-runtime generator now follows the intended lifecycle more closel
 - `gtc wizard --answers ...` creates packs and bundles
 - `gtc setup --answers ...` applies bundle setup/configuration
 - packaged `.gtbundle` archives are built from the configured bundle workspaces
+- transient `.greentic/wizard/run-*` execution records are treated as local scratch data and are cleaned/ignored by the repo
 
 The runtime generator now follows the same top-level lifecycle too:
 

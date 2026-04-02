@@ -16,8 +16,8 @@ fn runtime_single_turn_over_directline() {
     let endpoints =
         wait_for_runtime_readiness(&mut handle, Duration::from_secs(10)).expect("runtime ready");
 
-    let client =
-        DirectLineClient::new(endpoints.gateway_base_url(), handle.tenant.clone()).expect("client");
+    let client = DirectLineClient::new(endpoints.directline_base_url(), handle.tenant.clone())
+        .expect("client");
     let conversation = client
         .create_conversation()
         .expect("conversation should be created");
