@@ -22,6 +22,12 @@ impl RuntimeEndpointInfo {
     pub fn gateway_base_url(&self) -> String {
         format!("http://{}:{}", self.gateway_listen_addr, self.gateway_port)
     }
+
+    pub fn directline_base_url(&self) -> String {
+        self.public_base_url
+            .clone()
+            .unwrap_or_else(|| self.gateway_base_url())
+    }
 }
 
 pub fn wait_for_runtime_readiness(

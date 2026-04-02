@@ -11,6 +11,7 @@
     "bundle_name": "QA Template Worker",
     "tenant": "demo",
     "team": "default",
+    "webchat_mode": "directline",
     "public_base_url": "http://127.0.0.1:8080",
     "jwt_signing_key": "qa-template-worker-dev-key"
   },

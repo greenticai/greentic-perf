@@ -14,6 +14,21 @@ pub struct DirectLineClient {
     tenant: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct DirectLineClientOptions {
+    pub timeout: Duration,
+    pub accept_invalid_certs: bool,
+}
+
+impl Default for DirectLineClientOptions {
+    fn default() -> Self {
+        Self {
+            timeout: Duration::from_secs(10),
+            accept_invalid_certs: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DirectLineConversation {
     pub conversation_id: String,
@@ -64,8 +79,17 @@ struct ActivityFrom {
 
 impl DirectLineClient {
     pub fn new(base_url: impl Into<String>, tenant: impl Into<String>) -> io::Result<Self> {
+        Self::with_options(base_url, tenant, DirectLineClientOptions::default())
+    }
+
+    pub fn with_options(
+        base_url: impl Into<String>,
+        tenant: impl Into<String>,
+        options: DirectLineClientOptions,
+    ) -> io::Result<Self> {
         let client = Client::builder()
-            .timeout(Duration::from_secs(10))
+            .timeout(options.timeout)
+            .danger_accept_invalid_certs(options.accept_invalid_certs)
             .build()
             .map_err(io::Error::other)?;
         Ok(Self {
@@ -165,18 +189,20 @@ impl DirectLineClient {
                 .map_err(io::Error::other)?;
             let payload: ActivitiesResponse = response.json().map_err(io::Error::other)?;
             if let Some(activity) = payload.activities.into_iter().find(|activity| {
-                activity.activity_type == "message"
+                let is_bot_message = activity.activity_type == "message"
                     && activity
                         .from
                         .as_ref()
                         .and_then(|source| source.id.as_ref())
                         .map(|id| id != "perf-user")
-                        .unwrap_or(true)
-                    && activity
-                        .text
-                        .as_ref()
-                        .map(|text| text.contains(expected_substring))
-                        .unwrap_or(false)
+                        .unwrap_or(true);
+                if !is_bot_message {
+                    return false;
+                }
+                match activity.text.as_ref() {
+                    Some(text) => text.contains(expected_substring),
+                    None => true,
+                }
             }) {
                 return Ok(DirectLineReply {
                     conversation_id: conversation.conversation_id.clone(),

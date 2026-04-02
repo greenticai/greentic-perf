@@ -39,6 +39,13 @@ acquire_lock() {
   trap 'rmdir "$LOCK_DIR"' EXIT
 }
 
+cleanup_wizard_runs() {
+  local wizard_root="$ROOT_DIR/.greentic/wizard"
+  if [ -d "$wizard_root" ]; then
+    find "$wizard_root" -maxdepth 1 -mindepth 1 -type d -name 'run-*' -exec rm -rf {} +
+  fi
+}
+
 generate_tier() {
   local tier="$1"
   python3 - "$ROOT_DIR" "$SRC_DIR/$tier" "$GEN_DIR/$tier" <<'PY'
@@ -174,6 +181,7 @@ def write_pack(tier: str, answers: dict) -> None:
             "apply",
             "--answers",
             str(answer_doc_path),
+            "--yes",
             "--non-interactive",
             "--locale",
             "en",
@@ -302,6 +310,7 @@ def write_bundle(tier: str, answers: dict) -> None:
             "apply",
             "--answers",
             str(answer_doc_path),
+            "--yes",
             "--non-interactive",
             "--locale",
             "en",
@@ -380,12 +389,14 @@ main() {
 
   ensure_tooling
   acquire_lock
+  cleanup_wizard_runs
 
   for tier in "${unique_tiers[@]}"; do
     rm -rf "$GEN_DIR/$tier"
     generate_tier "$tier"
   done
 
+  cleanup_wizard_runs
   echo "Generated real perf fixtures:"
   for tier in "${unique_tiers[@]}"; do
     find "$GEN_DIR/$tier" -maxdepth 3 | sort

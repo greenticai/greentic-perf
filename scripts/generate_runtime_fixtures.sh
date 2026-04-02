@@ -21,6 +21,13 @@ ensure_tooling() {
   need_cmd gtc
 }
 
+cleanup_wizard_runs() {
+  local wizard_root="$ROOT_DIR/.greentic/wizard"
+  if [ -d "$wizard_root" ]; then
+    find "$wizard_root" -maxdepth 1 -mindepth 1 -type d -name 'run-*' -exec rm -rf {} +
+  fi
+}
+
 bundle_name() {
   python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["name"])' "$ANSWERS"
 }
@@ -150,6 +157,7 @@ setup_doc = {
     },
     "setup_answers": {
         "messaging-webchat": {
+            "mode": values.get("webchat_mode", "directline"),
             "public_base_url": values.get("public_base_url", "http://127.0.0.1:8080"),
             "jwt_signing_key": values.get("jwt_signing_key", "qa-template-worker-dev-key"),
         }
@@ -164,6 +172,7 @@ PY
 
 main() {
   ensure_tooling
+  cleanup_wizard_runs
 
   local name title tenant team bundle_dir artifact_dir artifact_path wizard_answers_path setup_answers_path staging_dir staging_artifact built_artifact
   name="$(bundle_name)"
@@ -183,7 +192,7 @@ main() {
 
   echo "Generating runtime fixture bundle: $name"
   write_runtime_answers "$staging_dir" "$wizard_answers_path" "$setup_answers_path"
-  if gtc wizard apply --answers "$wizard_answers_path" --non-interactive --locale en &&
+  if gtc wizard apply --answers "$wizard_answers_path" --yes --non-interactive --locale en &&
     gtc setup --answers "$setup_answers_path" "$staging_dir" &&
     gtc setup bundle build --bundle "$staging_dir" --out "$staging_artifact" --skip-doctor; then
     built_artifact="$(resolve_built_artifact "$staging_artifact" "$name")" || {
@@ -207,6 +216,7 @@ main() {
   fi
 
   test -f "$artifact_path"
+  cleanup_wizard_runs
   echo "Generated runtime fixture bundle at $bundle_dir"
   echo "Generated runtime artifact at $artifact_path"
 }

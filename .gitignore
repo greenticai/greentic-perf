@@ -1,5 +1,9 @@
 /target
 /.tmp
 /artifacts
+temp_auto_push.bat
+/.greentic/
 /fixtures-gen/*
 !/fixtures-gen/.gitkeep
+.gitignore
+branch_structure.json

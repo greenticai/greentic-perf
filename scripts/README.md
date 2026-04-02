@@ -8,5 +8,8 @@ Current scripts:
 - `generate_fixtures.sh`: renders deterministic source answers into real generated pack and bundle workspaces by driving `gtc wizard --answers ...`, then applies bundle setup via `gtc setup --answers ...`, then packages `.gtbundle` artifacts.
 - `generate_runtime_fixtures.sh`: creates the runtime startup bundle fixture with `gtc wizard --answers ...`, applies runtime setup with `gtc setup --answers ...`, and packages the runtime `.gtbundle` artifact. The remaining limitation is the released `gtc start` behavior for the local-only WebChat runtime, not the wizard/setup generation flow.
 - `check_fixtures.sh`: runs the fixture generator and validates the expected outputs.
+- `setup_webchat_perf.sh`: one-time setup/start for runtime webchat perf. Captures `wizard --schema`, applies `greentic-pack`/`greentic-bundle` wizard answers, runs `gtc setup --answers`, starts runtime, and writes a reusable session file.
+- `run_webchat_perf.sh`: run-only load phase. Reuses the setup session, performs warmup, and executes threaded throughput sweeps (`1..20` by default) with probe-first endpoint fallback.
+- `runtime_webchat_perf.sh`: convenience wrapper that runs `setup_webchat_perf.sh` then `run_webchat_perf.sh`.
 
 Keep scripts small, deterministic where possible, and safe to run in CI.
