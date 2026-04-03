@@ -1,46 +1,16 @@
 name: CI
-
 on:
-  pull_request:
+  workflow_call:
   push:
-    branches:
-      - master
-      - main
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Check formatting
-        run: cargo fmt --all -- --check
-      - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Run tests
-        run: cargo test --workspace --all-features
-
-  package-dry-run:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - name: Run local check
-        run: bash ci/local_check.sh package-only
+  ci:
+    uses: greenticai/.github/.github/workflows/host-crate-ci.yml@main
