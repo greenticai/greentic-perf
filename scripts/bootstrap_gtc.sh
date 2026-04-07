@@ -32,7 +32,7 @@ if ! command -v cargo-binstall >/dev/null 2>&1; then
 fi
 
 echo "Installing latest released gtc with cargo binstall..."
-cargo binstall gtc --no-confirm
+cargo binstall gtc --no-confirm --force
 
 need_cmd gtc
 
