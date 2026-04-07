@@ -87,9 +87,15 @@ impl DirectLineClient {
         tenant: impl Into<String>,
         options: DirectLineClientOptions,
     ) -> io::Result<Self> {
+        if options.accept_invalid_certs {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "accept_invalid_certs is not supported for security reasons",
+            ));
+        }
+
         let client = Client::builder()
             .timeout(options.timeout)
-            .danger_accept_invalid_certs(options.accept_invalid_certs)
             .build()
             .map_err(io::Error::other)?;
         Ok(Self {
