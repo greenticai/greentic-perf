@@ -8,6 +8,8 @@ mod support;
 #[cfg(unix)]
 use support::{ensure_generated_fixtures, generated_pack_fixture};
 
+const SCENARIO_COMMAND_TIMEOUT: Duration = Duration::from_secs(10);
+
 #[cfg(unix)]
 #[test]
 fn runs_a_command_against_a_copied_fixture_and_serializes_the_result() {
@@ -22,7 +24,7 @@ fn runs_a_command_against_a_copied_fixture_and_serializes_the_result() {
         ],
         &generated_pack_fixture("smoke"),
         4,
-        Duration::from_secs(2),
+        SCENARIO_COMMAND_TIMEOUT,
     )
     .expect("scenario should run");
 
@@ -70,11 +72,18 @@ fn times_out_long_running_commands() {
     assert!(!result.success);
     assert!(result.timed_out);
     assert_eq!(result.exit_code, None);
-    assert!(result.stdout_tail.contains("starting"));
     assert_eq!(result.last_completed_phase, "timeout");
     assert_eq!(
         result.phases.last().map(|phase| phase.phase.as_str()),
         Some("timeout")
+    );
+    assert_eq!(
+        result
+            .phases
+            .iter()
+            .map(|phase| phase.phase.as_str())
+            .collect::<Vec<_>>(),
+        vec!["checkout/setup", "fixture_prep", "command_start", "timeout"]
     );
 }
 

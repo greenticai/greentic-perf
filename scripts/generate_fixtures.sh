@@ -381,7 +381,7 @@ main() {
 
   local unique_tiers=()
   for tier in "${tiers[@]}"; do
-    case " ${unique_tiers[*]} " in
+    case " ${unique_tiers[*]-} " in
       *" $tier "*) ;;
       *) unique_tiers+=("$tier") ;;
     esac
