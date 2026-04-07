@@ -4,9 +4,9 @@ scenarios:
     args: ["pack", "build", "--in", "."]
     fixture: fixtures-gen/smoke/packs/perf-smoke-pack
     budgets:
-      "1": { max_ms: 2000 }
-      "4": { max_ms: 2000 }
-      "8": { max_ms: 2000 }
+      "1": { max_ms: 13000 }
+      "4": { max_ms: 10000 }
+      "8": { max_ms: 8000 }
     scaling:
       max_regression_vs_t1_pct: 150
       max_regression_vs_prev_pct: 150

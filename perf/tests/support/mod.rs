@@ -110,6 +110,22 @@ pub fn ensure_cli_available(binary: &str) {
     assert!(status.success(), "{binary} --version should succeed");
 }
 
+pub fn command_available(binary: &str) -> bool {
+    Command::new("sh")
+        .args(["-c", &format!("command -v {binary} >/dev/null 2>&1")])
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+pub fn bundle_build_supported() -> bool {
+    command_available("mksquashfs")
+}
+
+pub fn bundle_artifact_inspect_supported() -> bool {
+    command_available("unsquashfs")
+}
+
 pub fn repo_ref_for_binary(binary: &str) -> RepoRef {
     ensure_generated_fixtures();
     ensure_cli_available(binary);

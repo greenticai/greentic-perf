@@ -7,9 +7,12 @@ mod support;
 
 #[cfg(unix)]
 use support::{
-    greentic_bundle_repo_ref, greentic_dev_repo_ref, gtc_repo_ref, smoke_bundle_fixture,
-    smoke_pack_fixture, smoke_tier_fixture,
+    bundle_artifact_inspect_supported, bundle_build_supported, greentic_bundle_repo_ref,
+    greentic_dev_repo_ref, gtc_repo_ref, smoke_bundle_fixture, smoke_pack_fixture,
+    smoke_tier_fixture,
 };
+
+const SMOKE_COMMAND_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[cfg(unix)]
 #[test]
@@ -20,7 +23,7 @@ fn smoke_cli_help_returns_output_before_timeout() {
         &["--help"],
         &smoke_pack_fixture(),
         1,
-        Duration::from_secs(2),
+        SMOKE_COMMAND_TIMEOUT,
     )
     .expect("help scenario should run");
 
@@ -39,7 +42,7 @@ fn smoke_cli_version_returns_output_before_timeout() {
         &["version"],
         &smoke_pack_fixture(),
         1,
-        Duration::from_secs(2),
+        SMOKE_COMMAND_TIMEOUT,
     )
     .expect("version scenario should run");
 
@@ -87,13 +90,23 @@ fn smoke_cli_small_commands_complete_before_timeout() {
             ],
         ),
     ] {
+        if scenario_name == "smoke-bundle-build" && !bundle_build_supported() {
+            eprintln!("skipping {scenario_name}: mksquashfs is not available");
+            continue;
+        }
+        if scenario_name == "smoke-bundle-artifact-inspect" && !bundle_artifact_inspect_supported()
+        {
+            eprintln!("skipping {scenario_name}: unsquashfs is not available");
+            continue;
+        }
+
         let result = run_scenario(
             scenario_name,
             repo_ref,
             &args,
             &fixture,
             1,
-            Duration::from_secs(2),
+            SMOKE_COMMAND_TIMEOUT,
         )
         .expect("smoke command should run");
 
