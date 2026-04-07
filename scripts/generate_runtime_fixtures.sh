@@ -174,12 +174,13 @@ main() {
   ensure_tooling
   cleanup_wizard_runs
 
-  local name title tenant team bundle_dir artifact_dir artifact_path wizard_answers_path setup_answers_path staging_dir staging_artifact built_artifact
+  local name title tenant team bundle_dir bundle_root artifact_dir artifact_path wizard_answers_path setup_answers_path staging_dir staging_artifact built_artifact
   name="$(bundle_name)"
   title="$(bundle_title)"
   tenant="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["values"].get("tenant", "demo"))' "$ANSWERS")"
   team="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["values"].get("team", "default"))' "$ANSWERS")"
   bundle_dir="$GEN_DIR/bundles/$name"
+  bundle_root="$GEN_DIR/bundles"
   artifact_dir="$GEN_DIR/artifacts"
   artifact_path="$artifact_dir/$name.gtbundle"
   staging_dir="$GEN_DIR/.staging/$name"
@@ -188,7 +189,7 @@ main() {
   setup_answers_path="$GEN_DIR/.wizard/$name.bundle.setup.answers.json"
 
   rm -rf "$staging_dir" "$staging_artifact"
-  mkdir -p "$staging_dir" "$artifact_dir" "$GEN_DIR/.wizard" "$GEN_DIR/.staging"
+  mkdir -p "$staging_dir" "$bundle_root" "$artifact_dir" "$GEN_DIR/.wizard" "$GEN_DIR/.staging"
 
   echo "Generating runtime fixture bundle: $name"
   write_runtime_answers "$staging_dir" "$wizard_answers_path" "$setup_answers_path"
