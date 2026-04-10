@@ -239,8 +239,9 @@ EOF
   greentic-bundle wizard validate --answers "$ANSWERS_DIR/bundle.wizard.answers.json" --mode create
   greentic-bundle wizard run --answers "$ANSWERS_DIR/bundle.wizard.answers.json" --mode create --locale en
 
-  step "configure bundle via gtc setup --answers"
+  step "configure bundle via gtc setup --no-ui --answers"
   gtc setup "$BUNDLE_DIR" \
+    --no-ui \
     --answers "$ANSWERS_DIR/bundle.setup.answers.json" \
     --tenant "$TENANT" \
     --team "$TEAM"

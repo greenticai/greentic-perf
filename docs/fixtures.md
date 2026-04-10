@@ -33,9 +33,9 @@ Synthetic JSON blobs bypass the filesystem layout, bundle assembly, and package-
 The current generator is implemented in `scripts/generate_fixtures.sh` and follows the intended lifecycle for standard fixture bundles:
 
 - `gtc wizard --answers ...` to create packs and bundles
-- `gtc setup --answers ...` to configure bundles
+- `gtc setup --no-ui --answers ...` to configure bundles
 - bundle build/package commands to produce `.gtbundle` artifacts
 
 GitHub perf workflows bootstrap the latest released `gtc` first so fixture generation and workflow e2e runs track the current released CLI by default.
 
-The runtime fixture now follows the same top-level lifecycle too: `gtc wizard --answers ...` creates the bundle, `gtc setup --answers ...` configures it, and `gtc start` runs it. The remaining runtime limitation is no longer the fixture generator; it is the released `gtc start` behavior that still tries to force a cloudflared/public-url flow for the local-only runtime bundle.
+The runtime fixture now follows the same top-level lifecycle too: `gtc wizard --answers ...` creates the bundle, `gtc setup --no-ui --answers ...` configures it, and `gtc start` runs it. The remaining runtime limitation is no longer the fixture generator; it is the released `gtc start` behavior that still tries to force a cloudflared/public-url flow for the local-only runtime bundle.
