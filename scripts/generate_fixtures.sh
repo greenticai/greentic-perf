@@ -324,6 +324,7 @@ def write_bundle(tier: str, answers: dict) -> None:
         [
             "gtc",
             "setup",
+            "--no-ui",
             "--answers",
             str(setup_answers_path),
             str(bundle_root),

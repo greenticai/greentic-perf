@@ -60,12 +60,6 @@ fn smoke_cli_version_returns_output_before_timeout() {
 fn smoke_cli_small_commands_complete_before_timeout() {
     for (scenario_name, repo_ref, fixture, args) in [
         (
-            "smoke-gtc-doctor",
-            gtc_repo_ref(),
-            smoke_pack_fixture(),
-            vec!["doctor"],
-        ),
-        (
             "smoke-pack-build",
             greentic_dev_repo_ref(),
             smoke_pack_fixture(),

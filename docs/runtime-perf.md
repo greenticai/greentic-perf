@@ -27,7 +27,7 @@ Those tests remain ignored until the released `gtc start` path keeps the local-o
 
 ## Why The Gating Exists
 
-The harness now uses the real released `gtc` runtime entrypoint, and the runtime fixture itself follows the same high-level lifecycle as the standard fixtures: `gtc wizard --answers ...` creates the bundle workspace and `gtc setup --answers ...` applies setup answers before `gtc start` runs it. The repo keeps the startup path active so `gtc start` regressions are visible immediately, while the richer messaging scenarios are kept checked in and ready to enable once the runtime stays up reliably for local Direct Line traffic.
+The harness now uses the real released `gtc` runtime entrypoint, and the runtime fixture itself follows the same high-level lifecycle as the standard fixtures: `gtc wizard --answers ...` creates the bundle workspace and `gtc setup --no-ui --answers ...` applies setup answers before `gtc start` runs it. The repo keeps the startup path active so `gtc start` regressions are visible immediately, while the richer messaging scenarios are kept checked in and ready to enable once the runtime stays up reliably for local Direct Line traffic.
 
 The remaining blocker is the released runtime behavior, not provider availability or the wizard/setup flow. The generated runtime bundle now contains a real `messaging-webchat.gtpack`, and the Direct Line client has been updated to probe the provider's documented `/v3/directline/...` contract first. The current released `gtc start` path still synthesizes a `cloudflared` launch and times out waiting for a public URL even when the local fixture disables public web hosting, so the runtime does not stay available long enough for end-to-end Direct Line validation.
 

@@ -78,14 +78,14 @@ Tiers:
 The current non-runtime generator now follows the intended lifecycle more closely:
 
 - `gtc wizard --answers ...` creates packs and bundles
-- `gtc setup --answers ...` applies bundle setup/configuration
+- `gtc setup --no-ui --answers ...` applies bundle setup/configuration
 - packaged `.gtbundle` archives are built from the configured bundle workspaces
 - transient `.greentic/wizard/run-*` execution records are treated as local scratch data and are cleaned/ignored by the repo
 
 The runtime generator now follows the same top-level lifecycle too:
 
 - `gtc wizard --answers ...` creates the runtime bundle workspace
-- `gtc setup --answers ...` applies runtime setup answers
+- `gtc setup --no-ui --answers ...` applies runtime setup answers
 - `gtc start` runs the resulting bundle
 
 The remaining runtime gap is now in the released `gtc start` behavior rather than wizard/setup generation. The generated runtime bundle does include a real `messaging-webchat.gtpack`, but the current released runtime still tries to launch `cloudflared` and wait for a public URL even when the local fixture disables public web hosting, so the richer Direct Line scenarios remain gated.
