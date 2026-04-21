@@ -194,7 +194,7 @@ main() {
   echo "Generating runtime fixture bundle: $name"
   write_runtime_answers "$staging_dir" "$wizard_answers_path" "$setup_answers_path"
   if gtc wizard apply --answers "$wizard_answers_path" --yes --non-interactive --locale en &&
-    gtc setup --no-ui --answers "$setup_answers_path" "$staging_dir" &&
+    gtc setup bundle setup --non-interactive --no-ui --answers "$setup_answers_path" --bundle "$staging_dir" &&
     gtc setup bundle build --bundle "$staging_dir" --out "$staging_artifact" --skip-doctor; then
     built_artifact="$(resolve_built_artifact "$staging_artifact" "$name")" || {
       echo "error: unable to locate built runtime artifact under $staging_artifact" >&2
