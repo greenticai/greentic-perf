@@ -320,13 +320,21 @@ def write_bundle(tier: str, answers: dict) -> None:
     enrich_bundle(tier, answers, bundle_root)
     setup_answers_path = out_tier / ".wizard" / f"{answers['name']}.bundle.setup.answers.json"
     write_json(setup_answers_path, build_bundle_setup_answers(bundle_root))
+    # Use the `bundle setup` subcommand with --non-interactive: the top-level
+    # `gtc setup --no-ui --answers <file> <bundle>` form still requires a TTY
+    # for its confirmation prompt (greentic-setup 0.5.0+), which fails in CI
+    # with `IO error: not a terminal` even when answers are supplied.
     run(
         [
             "gtc",
             "setup",
+            "bundle",
+            "setup",
+            "--non-interactive",
             "--no-ui",
             "--answers",
             str(setup_answers_path),
+            "--bundle",
             str(bundle_root),
         ],
         cwd=root,
