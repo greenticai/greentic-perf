@@ -1,7 +1,10 @@
 name: Perf PR
+# Moved off pull_request onto a nightly schedule. See plans/binary-bifurcation.md
+# Phase A (heavy-job sweep). Manual runs remain via workflow_dispatch.
 
 on:
-  pull_request:
+  schedule:
+    - cron: "20 4 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -13,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.94.0
         with:
           toolchain: 1.94.0
       - uses: Swatinem/rust-cache@v2
@@ -65,7 +68,7 @@ jobs:
             command: inspect --artifact artifacts/perf-smoke-bundle.gtbundle --json --offline
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.94.0
         with:
           toolchain: 1.94.0
       - uses: Swatinem/rust-cache@v2
@@ -101,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.94.0
         with:
           toolchain: 1.94.0
       - uses: Swatinem/rust-cache@v2
