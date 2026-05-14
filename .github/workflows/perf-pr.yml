@@ -11,6 +11,10 @@ concurrency:
   group: perf-pr-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: read
+
 jobs:
   smoke-nextest:
     runs-on: ubuntu-latest
@@ -21,6 +25,8 @@ jobs:
           toolchain: 1.94.0
       - uses: Swatinem/rust-cache@v2
       - name: Install latest released gtc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/bootstrap_gtc.sh
       - name: Generate deterministic fixture outputs
         run: ./scripts/generate_fixtures.sh smoke
@@ -73,6 +79,8 @@ jobs:
           toolchain: 1.94.0
       - uses: Swatinem/rust-cache@v2
       - name: Install latest released gtc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/bootstrap_gtc.sh
       - name: Generate scenario JSON
         shell: bash
@@ -109,6 +117,8 @@ jobs:
           toolchain: 1.94.0
       - uses: Swatinem/rust-cache@v2
       - name: Install latest released gtc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/bootstrap_gtc.sh
       - name: Run small perf matrix
         run: cargo bench -p greentic-perf-harness --bench cli_bench -- --noplot
