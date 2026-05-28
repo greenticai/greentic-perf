@@ -113,12 +113,12 @@ wizard_doc = {
                         "detected_kind": "oci",
                         "display_name": "WebChat",
                         "provider_id": "messaging-webchat",
-                        "reference": "oci://ghcr.io/greenticai/packs/messaging/messaging-webchat:latest",
-                        "version": "latest",
+                        "reference": "oci://ghcr.io/greenticai/packs/messaging/messaging-webchat:stable",
+                        "version": "stable",
                     }
                 ],
                 "extension_providers": [
-                    "oci://ghcr.io/greenticai/packs/messaging/messaging-webchat:latest"
+                    "oci://ghcr.io/greenticai/packs/messaging/messaging-webchat:stable"
                 ],
                 "mode": "create",
                 "output_dir": str(bundle_dir),
