@@ -11,7 +11,7 @@ need_cmd() {
 install_bin() {
   local package="$1"
   echo "Installing latest released $package with cargo binstall..."
-  cargo binstall "$package" --no-confirm --force
+  cargo binstall "$package" --no-confirm --force --locked
 }
 
 ensure_cargo_bin_on_path() {
