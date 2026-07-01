@@ -16,6 +16,18 @@ need_cmd() {
 ensure_tooling() {
   if ! command -v gtc >/dev/null 2>&1; then
     bash "$ROOT_DIR/scripts/bootstrap_gtc.sh"
+  else
+    # The gtc binary can be restored from CI's cargo-bin cache (rust-cache
+    # `cache-bin: true`) without the toolchain *release context*, which lives
+    # outside ~/.cargo/bin and is not cached. `gtc start` needs that context,
+    # so ensure it is installed on the cache-hit path too (bootstrap_gtc.sh
+    # already runs `gtc install` on the cold path). Idempotent when present.
+    echo "gtc already present; ensuring toolchain release context is installed..."
+    if [ -n "${GREENTIC_TENANT:-}" ]; then
+      gtc install --tenant "${GREENTIC_TENANT}"
+    else
+      gtc install
+    fi
   fi
   need_cmd python3
   need_cmd gtc
