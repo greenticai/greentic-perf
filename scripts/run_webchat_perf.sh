@@ -25,7 +25,9 @@ RUNTIME_PID=""
 EFFECTIVE_TENANT=""
 EFFECTIVE_TEAM=""
 BUNDLE_DIR=""
-ENDPOINTS_PATH=""
+GATEWAY_HOST=""
+GATEWAY_PORT=""
+RUNTIME_HOME=""
 BASE_URL_CANDIDATES=()
 
 need_cmd() {
@@ -74,43 +76,15 @@ load_session() {
 
   RUNTIME_PID="$(jq -r '.runtime_pid' "$SESSION_FILE")"
   BUNDLE_DIR="$(jq -r '.bundle_dir' "$SESSION_FILE")"
-  ENDPOINTS_PATH="$(jq -r '.endpoints_path' "$SESSION_FILE")"
+  GATEWAY_HOST="$(jq -r '.gateway_host // "127.0.0.1"' "$SESSION_FILE")"
+  GATEWAY_PORT="$(jq -r '.gateway_port // "8080"' "$SESSION_FILE")"
+  RUNTIME_HOME="$(jq -r '.runtime_home // empty' "$SESSION_FILE")"
   EFFECTIVE_TENANT="$(jq -r '.tenant' "$SESSION_FILE")"
   EFFECTIVE_TEAM="$(jq -r '.team' "$SESSION_FILE")"
 }
 
 is_runtime_reachable() {
-  if [ ! -f "$ENDPOINTS_PATH" ]; then
-    return 1
-  fi
-
-  local gateway_host gateway_port
-  gateway_host="$(jq -r '.gateway_listen_addr // empty' "$ENDPOINTS_PATH")"
-  gateway_port="$(jq -r '.gateway_port // empty' "$ENDPOINTS_PATH")"
-  if [ -z "$gateway_host" ] || [ -z "$gateway_port" ]; then
-    return 1
-  fi
-
-  python3 - "$gateway_host" "$gateway_port" <<'PY' >/dev/null 2>&1
-import socket
-import sys
-
-host = sys.argv[1]
-port = int(sys.argv[2])
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.settimeout(1.0)
-try:
-    s.connect((host, port))
-    sys.exit(0)
-except OSError:
-    sys.exit(1)
-finally:
-    s.close()
-PY
-}
-
-latest_endpoints_path() {
-  find "$BUNDLE_DIR/state/runtime" -type f -path '*/endpoints.json' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-
+  curl -sf "http://${GATEWAY_HOST}:${GATEWAY_PORT}/readyz" >/dev/null 2>&1
 }
 
 start_runtime_from_session() {
@@ -118,39 +92,28 @@ start_runtime_from_session() {
   runtime_stdout="$(jq -r '.runtime_stdout' "$SESSION_FILE")"
   runtime_stderr="$(jq -r '.runtime_stderr' "$SESSION_FILE")"
 
-  local used_fallback=0
   local deadline=$((SECONDS + READINESS_TIMEOUT_SEC))
 
   step "start runtime from saved session"
-  gtc start "$BUNDLE_DIR" >"$runtime_stdout" 2>"$runtime_stderr" &
+  RUNTIME_HOME="$(mktemp -d "$(dirname "$BUNDLE_DIR")/runtime-home.XXXXXX")"
+  GREENTIC_GATEWAY_PORT="${GATEWAY_PORT}" \
+  GREENTIC_GATEWAY_LISTEN_ADDR="${GATEWAY_HOST}" \
+  HOME="$RUNTIME_HOME" \
+    gtc start "$BUNDLE_DIR" --cloudflared off >"$runtime_stdout" 2>"$runtime_stderr" &
   RUNTIME_PID="$!"
   echo "runtime pid: $RUNTIME_PID"
 
   while [ "$SECONDS" -lt "$deadline" ]; do
     if ! kill -0 "$RUNTIME_PID" >/dev/null 2>&1; then
-      if [ "$used_fallback" -eq 0 ] && grep -q "unexpected argument '--admin-port'" "$runtime_stderr"; then
-        echo "gtc start hit known --admin-port mismatch; retrying with greentic-start fallback"
-        greentic-start start --bundle "$BUNDLE_DIR" --nats off --cloudflared off --ngrok off >"$runtime_stdout" 2>"$runtime_stderr" &
-        RUNTIME_PID="$!"
-        used_fallback=1
-        sleep 1
-        continue
-      fi
       echo "runtime exited before readiness; see $runtime_stderr" >&2
       return 1
-    fi
-
-    local discovered_endpoints
-    discovered_endpoints="$(latest_endpoints_path || true)"
-    if [ -n "$discovered_endpoints" ]; then
-      ENDPOINTS_PATH="$discovered_endpoints"
     fi
 
     if is_runtime_reachable; then
       jq \
         --argjson runtime_pid "$RUNTIME_PID" \
-        --arg endpoints_path "$ENDPOINTS_PATH" \
-        '.runtime_pid = $runtime_pid | .endpoints_path = $endpoints_path' \
+        --arg runtime_home "$RUNTIME_HOME" \
+        '.runtime_pid = $runtime_pid | .runtime_home = $runtime_home' \
         "$SESSION_FILE" > "$SESSION_FILE.tmp"
       mv "$SESSION_FILE.tmp" "$SESSION_FILE"
       return 0
@@ -164,12 +127,6 @@ start_runtime_from_session() {
 }
 
 ensure_runtime_ready() {
-  local discovered_endpoints
-  discovered_endpoints="$(latest_endpoints_path || true)"
-  if [ -n "$discovered_endpoints" ]; then
-    ENDPOINTS_PATH="$discovered_endpoints"
-  fi
-
   if [ "${RUNTIME_PID:-0}" -gt 0 ] && kill -0 "$RUNTIME_PID" >/dev/null 2>&1 && is_runtime_reachable; then
     return 0
   fi
@@ -179,7 +136,7 @@ ensure_runtime_ready() {
       echo "runtime reachable even though recorded pid is not active; continuing"
       return 0
     fi
-    echo "runtime port reachable but directline token probe failed; starting runtime from session"
+    echo "runtime reachable but directline token probe failed; starting runtime from session"
     start_runtime_from_session
     return 0
   fi
@@ -188,19 +145,18 @@ ensure_runtime_ready() {
 }
 
 runtime_token_probe_ok() {
-  if [ ! -f "$SESSION_FILE" ] || [ ! -f "$ENDPOINTS_PATH" ]; then
+  if [ ! -f "$SESSION_FILE" ]; then
     return 1
   fi
 
-  local session_ingress configured_ingress discovered_gateway discovered_public
+  local gateway_candidate="http://${GATEWAY_HOST}:${GATEWAY_PORT}"
+
+  local session_ingress configured_ingress
   session_ingress="$(jq -r '.ingress_base_url // empty' "$SESSION_FILE")"
   configured_ingress="${INGRESS_BASE_URL:-$session_ingress}"
-  discovered_gateway="$(jq -r '"http://" + .gateway_listen_addr + ":" + (.gateway_port|tostring)' "$ENDPOINTS_PATH" 2>/dev/null || true)"
-  discovered_public="$(jq -r '.public_base_url // empty' "$ENDPOINTS_PATH" 2>/dev/null || true)"
 
   local candidates=()
-  [ -n "$discovered_public" ] && candidates+=("$discovered_public")
-  [ -n "$discovered_gateway" ] && candidates+=("$discovered_gateway")
+  candidates+=("$gateway_candidate")
   local ingress_origin
   ingress_origin="$(origin_from_url "$configured_ingress" || true)"
   [ -n "$ingress_origin" ] && candidates+=("$ingress_origin")
@@ -220,12 +176,7 @@ configure_runtime_targets() {
   session_ingress="$(jq -r '.ingress_base_url // empty' "$SESSION_FILE")"
   local configured_ingress="${INGRESS_BASE_URL:-$session_ingress}"
 
-  local discovered_gateway discovered_public
-  discovered_gateway="$(jq -r '"http://" + .gateway_listen_addr + ":" + (.gateway_port|tostring)' "$ENDPOINTS_PATH")"
-  discovered_public="$(jq -r '.public_base_url // empty' "$ENDPOINTS_PATH")"
-
-  add_base_url_candidate "$discovered_public"
-  add_base_url_candidate "$discovered_gateway"
+  add_base_url_candidate "http://${GATEWAY_HOST}:${GATEWAY_PORT}"
   add_base_url_candidate "$(origin_from_url "$configured_ingress")"
   add_base_url_candidate "$configured_ingress"
 
