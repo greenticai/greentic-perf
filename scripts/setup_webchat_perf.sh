@@ -40,7 +40,11 @@ step() {
 
 cleanup() {
   if [ "$KEEP_RUNTIME" -eq 0 ]; then
-    HOME="${RUNTIME_HOME:-}" gtc stop 2>/dev/null || echo "WARN: gtc stop failed ($?)" >&2
+    # Skip when the runtime HOME was never created (failure before wait_for_runtime):
+    # an empty HOME would send `gtc stop` looking for .greentic under the cwd.
+    if [ -n "$RUNTIME_HOME" ]; then
+      HOME="$RUNTIME_HOME" gtc stop 2>/dev/null || echo "WARN: gtc stop failed ($?)" >&2
+    fi
     if [ -n "$RUNTIME_PID" ] && kill -0 "$RUNTIME_PID" >/dev/null 2>&1; then
       kill "$RUNTIME_PID" >/dev/null 2>&1 || true
       wait "$RUNTIME_PID" >/dev/null 2>&1 || true
