@@ -17,11 +17,13 @@ RUNTIME_STDERR="$LOG_DIR/runtime.stderr.log"
 TENANT="${RUNTIME_PERF_TENANT:-default}"
 TEAM="${RUNTIME_PERF_TEAM:-default}"
 READINESS_TIMEOUT_SEC="${RUNTIME_PERF_READINESS_TIMEOUT_SEC:-60}"
-INGRESS_BASE_URL="${RUNTIME_PERF_INGRESS_BASE_URL:-https://localhost:8080/va/1messaging/ingress/webchat/default}"
+INGRESS_BASE_URL="${RUNTIME_PERF_INGRESS_BASE_URL:-http://localhost:8080/v1/messaging/ingress/webchat/default}"
+GATEWAY_HOST="${RUNTIME_PERF_GATEWAY_HOST:-127.0.0.1}"
+GATEWAY_PORT="${RUNTIME_PERF_GATEWAY_PORT:-8080}"
 
 RUNTIME_PID=""
+RUNTIME_HOME=""
 KEEP_RUNTIME=0
-ENDPOINTS_PATH=""
 EFFECTIVE_TENANT="$TENANT"
 EFFECTIVE_TEAM="$TEAM"
 
@@ -37,9 +39,16 @@ step() {
 }
 
 cleanup() {
-  if [ "$KEEP_RUNTIME" -eq 0 ] && [ -n "$RUNTIME_PID" ] && kill -0 "$RUNTIME_PID" >/dev/null 2>&1; then
-    kill "$RUNTIME_PID" >/dev/null 2>&1 || true
-    wait "$RUNTIME_PID" >/dev/null 2>&1 || true
+  if [ "$KEEP_RUNTIME" -eq 0 ]; then
+    # Skip when the runtime HOME was never created (failure before wait_for_runtime):
+    # an empty HOME would send `gtc stop` looking for .greentic under the cwd.
+    if [ -n "$RUNTIME_HOME" ]; then
+      HOME="$RUNTIME_HOME" gtc stop 2>/dev/null || echo "WARN: gtc stop failed ($?)" >&2
+    fi
+    if [ -n "$RUNTIME_PID" ] && kill -0 "$RUNTIME_PID" >/dev/null 2>&1; then
+      kill "$RUNTIME_PID" >/dev/null 2>&1 || true
+      wait "$RUNTIME_PID" >/dev/null 2>&1 || true
+    fi
   fi
 }
 
@@ -58,10 +67,16 @@ stop_previous_runtime_if_present() {
     return 0
   fi
 
+  step "stop previous runtime"
+  local prev_home
+  prev_home="$(jq -r '.runtime_home // empty' "$SESSION_FILE" 2>/dev/null || true)"
+  if [ -n "$prev_home" ]; then
+    HOME="$prev_home" gtc stop 2>/dev/null || true
+  fi
+
   local previous_pid
   previous_pid="$(jq -r '.runtime_pid // empty' "$SESSION_FILE" 2>/dev/null || true)"
   if [ -n "$previous_pid" ] && kill -0 "$previous_pid" >/dev/null 2>&1; then
-    step "stop previous runtime pid $previous_pid"
     kill "$previous_pid" >/dev/null 2>&1 || true
     wait "$previous_pid" >/dev/null 2>&1 || true
   fi
@@ -179,7 +194,7 @@ bundle_doc = {
 
 setup_doc = {
     "bundle_source": str(bundle_dir),
-    "env": "dev",
+    "env": "local",
     "tenant": tenant,
     "team": team,
     "platform_setup": {
@@ -247,44 +262,31 @@ EOF
     --team "$TEAM"
 }
 
-latest_endpoints_path() {
-  find "$BUNDLE_DIR/state/runtime" -type f -path '*/endpoints.json' -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n 1 | cut -d' ' -f2-
-}
-
 wait_for_runtime() {
   local deadline=$((SECONDS + READINESS_TIMEOUT_SEC))
-  local used_fallback=0
 
   step "start runtime with gtc start ./bundle"
-  gtc start "$BUNDLE_DIR" >"$RUNTIME_STDOUT" 2>"$RUNTIME_STDERR" &
+  RUNTIME_HOME="$(mktemp -d "$RUN_ROOT/runtime-home.XXXXXX")"
+  GREENTIC_GATEWAY_PORT="${GATEWAY_PORT}" \
+  GREENTIC_GATEWAY_LISTEN_ADDR="${GATEWAY_HOST}" \
+  HOME="$RUNTIME_HOME" \
+    gtc start "$BUNDLE_DIR" --cloudflared off >"$RUNTIME_STDOUT" 2>"$RUNTIME_STDERR" &
   RUNTIME_PID="$!"
   echo "runtime pid: $RUNTIME_PID"
 
   while [ "$SECONDS" -lt "$deadline" ]; do
     if ! kill -0 "$RUNTIME_PID" >/dev/null 2>&1; then
-      if [ "$used_fallback" -eq 0 ] && grep -q "unexpected argument '--admin-port'" "$RUNTIME_STDERR"; then
-        echo "gtc start hit known --admin-port mismatch; retrying with greentic-start fallback"
-        greentic-start start --bundle "$BUNDLE_DIR" --nats off --cloudflared off --ngrok off >"$RUNTIME_STDOUT" 2>"$RUNTIME_STDERR" &
-        RUNTIME_PID="$!"
-        used_fallback=1
-        sleep 1
-        continue
-      fi
       echo "runtime exited before readiness; see $RUNTIME_STDERR" >&2
       exit 1
     fi
-
-    local endpoints_path
-    endpoints_path="$(latest_endpoints_path || true)"
-    if [ -n "$endpoints_path" ] && [ -f "$endpoints_path" ]; then
-      ENDPOINTS_PATH="$endpoints_path"
-      echo "runtime endpoints: $endpoints_path"
+    if curl -sf "http://${GATEWAY_HOST}:${GATEWAY_PORT}/readyz" >/dev/null 2>&1; then
+      echo "runtime ready on http://${GATEWAY_HOST}:${GATEWAY_PORT}"
       return 0
     fi
     sleep 1
   done
 
-  echo "runtime did not become ready within ${READINESS_TIMEOUT_SEC}s; expected state/runtime/**/endpoints.json" >&2
+  echo "runtime did not become ready within ${READINESS_TIMEOUT_SEC}s" >&2
   exit 1
 }
 
@@ -292,7 +294,9 @@ write_session() {
   jq -n \
     --arg runtime_pid "$RUNTIME_PID" \
     --arg bundle_dir "$BUNDLE_DIR" \
-    --arg endpoints_path "$ENDPOINTS_PATH" \
+    --arg runtime_home "$RUNTIME_HOME" \
+    --arg gateway_host "$GATEWAY_HOST" \
+    --arg gateway_port "$GATEWAY_PORT" \
     --arg tenant "$EFFECTIVE_TENANT" \
     --arg team "$EFFECTIVE_TEAM" \
     --arg ingress_base_url "$INGRESS_BASE_URL" \
@@ -301,7 +305,9 @@ write_session() {
     '{
       runtime_pid: ($runtime_pid | tonumber),
       bundle_dir: $bundle_dir,
-      endpoints_path: $endpoints_path,
+      runtime_home: $runtime_home,
+      gateway_host: $gateway_host,
+      gateway_port: $gateway_port,
       tenant: $tenant,
       team: $team,
       ingress_base_url: $ingress_base_url,
