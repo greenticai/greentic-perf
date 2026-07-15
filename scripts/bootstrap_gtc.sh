@@ -37,15 +37,16 @@ if ! command -v cargo-binstall >/dev/null 2>&1; then
   cargo install cargo-binstall --locked
 fi
 
+GTC_RELEASE="${GTC_RELEASE:-1.1.7}"
+
 for package in \
-  gtc \
+  "gtc@>=${GTC_RELEASE}" \
   greentic-dev \
   greentic-pack \
   greentic-bundle \
   greentic-setup \
   greentic-operator \
-  greentic-deployer \
-  greentic-start
+  greentic-deployer
 do
   install_bin "$package"
 done
