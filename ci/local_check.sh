@@ -72,6 +72,9 @@ run_packaging_checks() {
 
 case "$mode" in
   full)
+    step "shell script tests"
+    bash scripts/tests/bootstrap_retry_test.sh
+
     step "cargo fmt"
     cargo fmt --all -- --check
 
