@@ -1,52 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT_DIR="$(cd -- "$(dirname "$0")/.." && pwd)"
+
+# shellcheck source=scripts/lib/retry.sh
+source "$ROOT_DIR/scripts/lib/retry.sh"
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "missing required command: $1" >&2
     exit 1
   }
-}
-
-# Re-run a command while it keeps failing.
-#
-# Every step in this script is network-bound: seven cargo binstall downloads
-# followed by a `gtc install` that pulls ~40 packs from ghcr.io one at a time.
-# A single dropped connection anywhere in that sequence fails the whole job,
-# and the nightly runs this across a job matrix that all starts at once, so a
-# lone transport blip is expected rather than exceptional.
-#
-# Retrying is safe because both commands resume rather than restart: binstall
-# re-downloads only what it was installing, and `gtc install` skips artifacts
-# already in its cache.
-#
-# Backoff doubles and carries jitter so matrix jobs that fail together do not
-# retry in lockstep and collide again.
-retry() {
-  local description="$1"
-  shift
-
-  local attempts="${BOOTSTRAP_RETRY_ATTEMPTS:-3}"
-  local delay="${BOOTSTRAP_RETRY_INITIAL_SECONDS:-5}"
-  local attempt=1
-
-  while true; do
-    if "$@"; then
-      return 0
-    fi
-
-    if [ "$attempt" -ge "$attempts" ]; then
-      echo "$description failed after $attempts attempt(s); giving up" >&2
-      return 1
-    fi
-
-    local sleep_for=$((delay + RANDOM % (delay + 1)))
-    echo "$description failed (attempt $attempt/$attempts); retrying in ${sleep_for}s" >&2
-    sleep "$sleep_for"
-
-    attempt=$((attempt + 1))
-    delay=$((delay * 2))
-  done
 }
 
 install_bin() {

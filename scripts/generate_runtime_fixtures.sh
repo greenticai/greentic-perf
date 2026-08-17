@@ -6,6 +6,9 @@ SRC_DIR="$ROOT_DIR/fixtures-src/runtime"
 GEN_DIR="$ROOT_DIR/fixtures-gen/runtime"
 ANSWERS="$SRC_DIR/qa-template-worker/answers.json"
 
+# shellcheck source=scripts/lib/retry.sh
+source "$ROOT_DIR/scripts/lib/retry.sh"
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || {
     echo "missing required command: $1" >&2
@@ -24,9 +27,9 @@ ensure_tooling() {
     # already runs `gtc install` on the cold path). Idempotent when present.
     echo "gtc already present; ensuring toolchain release context is installed..."
     if [ -n "${GREENTIC_TENANT:-}" ]; then
-      gtc install --tenant "${GREENTIC_TENANT}"
+      retry "gtc install" gtc install --tenant "${GREENTIC_TENANT}"
     else
-      gtc install
+      retry "gtc install" gtc install
     fi
   fi
   need_cmd python3
