@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regression tests for the retry() helper in scripts/bootstrap_gtc.sh.
+# Regression tests for the retry() helper in scripts/lib/retry.sh.
 #
 # retry() guards every network step of the nightly bootstrap, so a regression
 # here silently reintroduces the failure mode it exists to prevent: one dropped
@@ -8,24 +8,22 @@
 set -uo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-bootstrap="$script_dir/../bootstrap_gtc.sh"
+scripts_dir="$script_dir/.."
+lib="$scripts_dir/lib/retry.sh"
 
-if [ ! -f "$bootstrap" ]; then
-  echo "FAIL: cannot find $bootstrap" >&2
+if [ ! -f "$lib" ]; then
+  echo "FAIL: cannot find $lib" >&2
   exit 1
 fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
-# Extract retry() from the real script so these tests exercise the shipped
-# code rather than a copy that can drift out of sync with it.
-sed -n '/^retry() {/,/^}/p' "$bootstrap" > "$work/retry.sh"
-# shellcheck disable=SC1090
-source "$work/retry.sh"
+# shellcheck source=scripts/lib/retry.sh
+source "$lib"
 
 if ! declare -F retry >/dev/null; then
-  echo "FAIL: could not extract retry() from $bootstrap" >&2
+  echo "FAIL: $lib did not define retry()" >&2
   exit 1
 fi
 
@@ -97,6 +95,50 @@ else
   echo "FAIL - did not back off between attempts (${elapsed}s)" >&2
   fails=$((fails + 1))
 fi
+
+# Defining retry() is not the point -- calling it at every network step is.
+# The first pass at this fix wrapped bootstrap_gtc.sh but missed the second
+# `gtc install` in generate_runtime_fixtures.sh, which left the exact failure
+# mode alive on the cargo-bin cache hit path. This walks the shipped scripts
+# and fails on any ghcr/crates.io call that is not behind retry().
+#
+# Line continuations are joined first, otherwise the wrapped form
+#   retry "..." \
+#     cargo binstall ...
+# reads as a bare call on its second line.
+unguarded_calls() {
+  awk '
+    { line = line $0 }
+    /\\$/ { sub(/\\$/, " ", line); next }
+    {
+      if (line ~ /^[[:space:]]*(gtc install|cargo binstall|cargo install)/ &&
+          line !~ /retry[[:space:]]/) {
+        print FILENAME ":" FNR ": " line
+      }
+      line = ""
+    }
+  ' "$1"
+}
+
+for shipped in "$scripts_dir/bootstrap_gtc.sh" "$scripts_dir/generate_runtime_fixtures.sh"; do
+  name="$(basename "$shipped")"
+
+  if grep -q 'source .*lib/retry\.sh' "$shipped"; then
+    echo "ok   - $name sources the shared retry helper"
+  else
+    echo "FAIL - $name does not source lib/retry.sh" >&2
+    fails=$((fails + 1))
+  fi
+
+  unguarded="$(unguarded_calls "$shipped")"
+  if [ -z "$unguarded" ]; then
+    echo "ok   - $name has no unguarded network call"
+  else
+    echo "FAIL - $name calls the network without retry():" >&2
+    echo "$unguarded" >&2
+    fails=$((fails + 1))
+  fi
+done
 
 echo
 if [ "$fails" -eq 0 ]; then
