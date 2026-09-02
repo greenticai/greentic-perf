@@ -86,10 +86,28 @@ echo "gtc version:"
 gtc --version || true
 
 echo "Refreshing latest installable Greentic artifacts..."
+# `--install-binaries-only` skips `gtc install`'s second phase: an
+# all-or-nothing prefetch of every pack and component in the release. One
+# transient ghcr.io blob error anywhere in that loop aborts the whole install,
+# and the skip-list is keyed off a release index written only after the loop
+# fully succeeds — so the retry redoes every pull instead of resuming. That is
+# why a failure shows three attempts against three DIFFERENT packs, e.g. run
+# 33610893351: component-adapter-pack, then weatherapi-pack, then
+# router-lite-pack. It cost 3 of the last 12 Perf PR runs.
+#
+# Nothing here reads that prefetch. The scenarios drive locally generated
+# fixtures (fixtures-gen/smoke/packs/perf-smoke-pack), and the one OCI pack
+# this repo uses is named by explicit `oci://ghcr.io/...:latest` reference in
+# generate_runtime_fixtures.sh / setup_webchat_perf.sh, so it is pulled on
+# demand at wizard time either way; the release index only maps the `:stable`
+# channel tag, which no fixture here uses.
+#
+# The toolchain release context that `gtc start` needs is still installed:
+# that is the binaries phase, which this flag keeps.
 if [ -n "${GREENTIC_TENANT:-}" ]; then
-  retry "gtc install" gtc install --tenant "${GREENTIC_TENANT}"
+  retry "gtc install" gtc install --install-binaries-only --tenant "${GREENTIC_TENANT}"
 else
-  retry "gtc install" gtc install
+  retry "gtc install" gtc install --install-binaries-only
 fi
 
 echo "Bootstrap complete."
