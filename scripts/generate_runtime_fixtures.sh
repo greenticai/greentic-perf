@@ -190,7 +190,7 @@ setup_doc = {
     },
     "setup_answers": {
         "messaging-webchat": {
-            "mode": values.get("webchat_mode", "directline"),
+            "mode": values.get("webchat_mode", "local_queue"),
             "public_base_url": values.get("public_base_url", "http://127.0.0.1:8080"),
             "jwt_signing_key": values.get("jwt_signing_key", "qa-template-worker-dev-key"),
             "webchat_token": values.get(
