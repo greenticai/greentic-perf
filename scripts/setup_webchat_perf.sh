@@ -208,7 +208,7 @@ setup_doc = {
     },
     "setup_answers": {
         "messaging-webchat": {
-            "mode": "directline",
+            "mode": "local_queue",
             "public_base_url": public_base_url,
             "jwt_signing_key": "perf-runtime-webchat-dev-key",
         }
