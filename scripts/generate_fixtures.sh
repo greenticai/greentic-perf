@@ -199,10 +199,13 @@ def copy_pack_for_bundle(bundle_root: Path, pack_name: str) -> None:
         / "packs"
         / pack_name
     )
-    target_pack = bundle_root / "packs" / pack_name
-    if target_pack.exists():
-        shutil.rmtree(target_pack)
-    shutil.copytree(source_pack, target_pack)
+    # greentic-bundle 1.2+ resolves an app pack reference to a `.gtpack`
+    # file (`./packs/<name>.gtpack`) and no longer accepts a pack directory.
+    built_pack = source_pack / "dist" / f"{pack_name}.gtpack"
+    if not built_pack.is_file():
+        raise FileNotFoundError(f"built pack not found: {built_pack}")
+    target_pack = bundle_root / "packs" / f"{pack_name}.gtpack"
+    shutil.copyfile(built_pack, target_pack)
 
 
 def build_bundle_answer_document(answers: dict, bundle_root: Path) -> dict:
@@ -212,7 +215,7 @@ def build_bundle_answer_document(answers: dict, bundle_root: Path) -> dict:
     rules = []
     for pack_ref in values["pack_refs"]:
         pack_name = Path(pack_ref["local_path"]).parts[-2]
-        reference = f"./packs/{pack_name}"
+        reference = f"./packs/{pack_name}.gtpack"
         entries.append(
             {
                 "detected_kind": "local_file",
